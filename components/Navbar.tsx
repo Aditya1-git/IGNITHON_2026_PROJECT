@@ -69,7 +69,8 @@ export default function Navbar() {
           <ul style={{ display: 'flex', gap: 4 }}>
             {LINKS.filter(
               (link) =>
-                link.href !== '/organizer' || currentUser.role === 'organizer',
+                (link.href !== '/organizer' || currentUser.role === 'organizer') &&
+                (link.href !== '/registrations' || currentUser.role !== 'organizer'),
             ).map((link) => {
               const active =
                 link.href === '/'
