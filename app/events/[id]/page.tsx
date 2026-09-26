@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { getEventById, isPastEvent, isFullEvent } from '@/data/events'
+import { registrations } from '@/data/registrations'
 import StatusBadge from '@/components/StatusBadge'
 import EmptyState from '@/components/EmptyState'
 import RegistrationButton from '@/components/RegistrationButton'
@@ -45,6 +46,9 @@ export default function EventDetailPage({
 
   const past = isPastEvent(event)
   const full = isFullEvent(event)
+  const eventRegistrations = registrations.filter(r => r.eventId === event.id)
+  const isRegisteredServer = false // unused here, but used in Client component
+
   const status = event.cancelled
     ? 'cancelled'
     : past
@@ -102,6 +106,7 @@ export default function EventDetailPage({
             eventId={event.id}
             canRegister={canRegister}
             status={status}
+            eventRegistrations={eventRegistrations}
           />
         </aside>
       </div>

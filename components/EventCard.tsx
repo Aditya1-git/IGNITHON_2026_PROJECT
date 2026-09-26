@@ -10,16 +10,18 @@ function formatDate(iso: string) {
   })
 }
 
-export default function EventCard({ event }: { event: CampusEvent }) {
+export default function EventCard({ event, isRegistered }: { event: CampusEvent; isRegistered?: boolean }) {
   const past = isPastEvent(event)
   const full = isFullEvent(event)
   const status = event.cancelled
     ? 'cancelled'
-    : past
-      ? 'past'
-      : full
-        ? 'full'
-        : 'open'
+    : isRegistered
+      ? 'registered'
+      : past
+        ? 'past'
+        : full
+          ? 'full'
+          : 'open'
 
   return (
     <Link href={`/events/${event.id}`} className="event-card">
