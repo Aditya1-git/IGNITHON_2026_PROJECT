@@ -48,6 +48,24 @@ export function getRegistrationsForStudent(studentId: string): Registration[] {
   return registrations.filter((reg) => reg.studentId === studentId)
 }
 
+export function hasActiveRegistration(studentId: string, eventId: string): boolean {
+  return registrations.some(
+    (reg) => reg.studentId === studentId && reg.eventId === eventId && reg.status === 'confirmed'
+  )
+}
+
+export function createRegistration(studentId: string, eventId: string): Registration {
+  const newReg: Registration = {
+    id: `reg-${Date.now()}-${Math.floor(Math.random() * 10000)}`,
+    eventId,
+    studentId,
+    status: 'confirmed',
+    registeredAt: new Date().toISOString(),
+  }
+  registrations.push(newReg)
+  return newReg
+}
+
 export function cancelRegistration(registrationId: string) {
   const reg = registrations.find((r) => r.id === registrationId)
   if (reg && reg.status !== 'cancelled') {
