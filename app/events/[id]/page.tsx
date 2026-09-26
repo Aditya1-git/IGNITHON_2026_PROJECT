@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { getEventById, isPastEvent, isFullEvent } from '@/data/events'
 import StatusBadge from '@/components/StatusBadge'
 import EmptyState from '@/components/EmptyState'
+import RegistrationButton from '@/components/RegistrationButton'
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString('en-IN', {
@@ -96,23 +97,12 @@ export default function EventDetailPage({
             value={`${event.seatsAvailable} of ${event.capacity} available`}
           />
 
-          {/* PARTICIPANT TASK (Task 2 — Registration): this button is a
-              placeholder. Wire it to a registration form and the
-              POST /api/registrations route, and make sure it respects
-              login state, duplicate registrations, full events, and
-              past/cancelled events. */}
-          <button
-            className="btn btn-primary"
-            disabled={!canRegister}
-            style={{ marginTop: 4 }}
-            title="Registration isn't wired up yet — that's Task 2"
-          >
-            {canRegister
-              ? 'Register'
-              : status === 'full'
-                ? 'Event full'
-                : 'Registration closed'}
-          </button>
+          {/* PARTICIPANT TASK (Task 2 — Registration): Wired up to RegistrationButton */}
+          <RegistrationButton
+            eventId={event.id}
+            canRegister={canRegister}
+            status={status}
+          />
         </aside>
       </div>
     </section>
