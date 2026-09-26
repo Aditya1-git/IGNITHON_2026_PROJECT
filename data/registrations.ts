@@ -2,6 +2,8 @@
 // pages have something real to display before participants build the
 // actual registration flow (Task 2 and Task 3).
 
+import { getEventById } from './events'
+
 export type RegistrationStatus = 'confirmed' | 'cancelled'
 
 export interface Registration {
@@ -41,6 +43,18 @@ export const registrations: Registration[] = [
 ]
 
 /** Simple lookup used by the placeholder "My Registrations" page. */
+
 export function getRegistrationsForStudent(studentId: string): Registration[] {
   return registrations.filter((reg) => reg.studentId === studentId)
+}
+
+export function cancelRegistration(registrationId: string) {
+  const reg = registrations.find((r) => r.id === registrationId)
+  if (reg && reg.status !== 'cancelled') {
+    reg.status = 'cancelled'
+    const event = getEventById(reg.eventId)
+    if (event) {
+      event.seatsAvailable += 1
+    }
+  }
 }
