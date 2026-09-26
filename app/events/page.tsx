@@ -77,7 +77,7 @@ export default function EventsPage() {
           gap: 16,
         }}
       >
-        {events.map((event) => (
+        {events.filter((e) => !e.cancelled).map((event) => (
           <EventCard key={event.id} event={event} />
         ))}
       </div>

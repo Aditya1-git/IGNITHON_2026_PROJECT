@@ -266,3 +266,154 @@ export function filterEventsByCategory(
   // TODO(participant): implement category filtering.
   return eventList
 }
+
+const VALID_CATEGORIES: EventCategory[] = [
+  'Tech',
+  'Cultural',
+  'Sports',
+  'Workshop',
+  'Career',
+  'Music',
+]
+
+export interface EventValidationError {
+  field: string
+  message: string
+}
+
+export function validateEventInput(input: {
+  name?: string
+  description?: string
+  date?: string
+  venue?: string
+  category?: string
+  capacity?: number
+}): EventValidationError[] {
+  const errors: EventValidationError[] = []
+
+  if (!input.name || input.name.trim() === '') {
+    errors.push({ field: 'name', message: 'Event name is required' })
+  }
+
+  if (!input.date) {
+    errors.push({ field: 'date', message: 'Event date is required' })
+  } else {
+    const eventDate = new Date(input.date)
+    if (isNaN(eventDate.getTime())) {
+      errors.push({ field: 'date', message: 'Invalid date format' })
+    } else if (eventDate.getTime() <= TODAY.getTime()) {
+      errors.push({ field: 'date', message: 'Event date must be in the future' })
+    }
+  }
+
+  if (!input.venue || input.venue.trim() === '') {
+    errors.push({ field: 'venue', message: 'Venue is required' })
+  }
+
+  if (!input.category || !VALID_CATEGORIES.includes(input.category as EventCategory)) {
+    errors.push({ field: 'category', message: 'Category must be one of: ' + VALID_CATEGORIES.join(', ') })
+  }
+
+  if (input.capacity === undefined || input.capacity === null) {
+    errors.push({ field: 'capacity', message: 'Capacity is required' })
+  } else if (!Number.isInteger(input.capacity) || input.capacity <= 0) {
+    errors.push({ field: 'capacity', message: 'Capacity must be a positive integer' })
+  }
+
+  return errors
+}
+
+function generateEventId(): string {
+  const maxId = events.reduce((max, event) => {
+    const match = event.id.match(/^evt-(\d+)$/)
+    if (match) {
+      const num = parseInt(match[1], 10)
+      return num > max ? num : max
+    }
+    return max
+  }, 0)
+  const nextId = maxId + 1
+  return `evt-${String(nextId).padStart(2, '0')}`
+}
+
+export function createEvent(input: {
+  name: string
+  description: string
+  date: string
+  venue: string
+  category: EventCategory
+  capacity: number
+  organizerId: string
+}): CampusEvent {
+  const errors = validateEventInput(input)
+  if (errors.length > 0) {
+    throw new Error(errors.map((e) => e.message).join('; '))
+  }
+
+  const newEvent: CampusEvent = {
+    id: generateEventId(),
+    name: input.name.trim(),
+    description: input.description?.trim() ?? '',
+    date: input.date,
+    venue: input.venue.trim(),
+    category: input.category,
+    capacity: input.capacity,
+    seatsAvailable: input.capacity,
+    organizerId: input.organizerId,
+    cancelled: false,
+  }
+
+  events.push(newEvent)
+  return newEvent
+}
+
+export function updateEvent(
+  id: string,
+  updates: Partial<Pick<CampusEvent, 'name' | 'description' | 'date' | 'venue' | 'category' | 'capacity'>>
+): CampusEvent | undefined {
+  const index = events.findIndex((e) => e.id === id)
+  if (index === -1) {
+    return undefined
+  }
+
+  const existingEvent = events[index]
+  const mergedEvent: CampusEvent = {
+    ...existingEvent,
+    ...updates,
+    name: updates.name?.trim() ?? existingEvent.name,
+    description: updates.description?.trim() ?? existingEvent.description,
+    venue: updates.venue?.trim() ?? existingEvent.venue,
+  }
+
+  const errors = validateEventInput({
+    name: mergedEvent.name,
+    date: mergedEvent.date,
+    venue: mergedEvent.venue,
+    category: mergedEvent.category,
+    capacity: mergedEvent.capacity,
+  })
+  if (errors.length > 0) {
+    throw new Error(errors.map((e) => e.message).join('; '))
+  }
+
+  if (updates.capacity !== undefined && updates.capacity !== existingEvent.capacity) {
+    const registered = existingEvent.capacity - existingEvent.seatsAvailable
+    mergedEvent.seatsAvailable = Math.max(0, updates.capacity - registered)
+  }
+
+  events[index] = mergedEvent
+  return mergedEvent
+}
+
+export function cancelEvent(id: string): CampusEvent | undefined {
+  const index = events.findIndex((e) => e.id === id)
+  if (index === -1) {
+    return undefined
+  }
+
+  events[index] = {
+    ...events[index],
+    cancelled: true,
+  }
+  return events[index]
+}
