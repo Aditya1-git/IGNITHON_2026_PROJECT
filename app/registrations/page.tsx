@@ -1,14 +1,16 @@
 'use client'
 
+import { useState } from 'react'
 import Link from 'next/link'
 import { useAuth } from '@/components/AuthProvider'
-import { getRegistrationsForStudent } from '@/data/registrations'
-import { getEventById } from '@/data/events'
+import { getRegistrationsForStudent, cancelRegistration, Registration } from '@/data/registrations'
+import { getEventById, isPastEvent } from '@/data/events'
 import StatusBadge from '@/components/StatusBadge'
 import EmptyState from '@/components/EmptyState'
 
 export default function RegistrationsPage() {
   const { currentUser } = useAuth()
+  const [refreshTick, setRefreshTick] = useState(0)
 
   if (currentUser.role !== 'student') {
     return (
@@ -23,34 +25,40 @@ export default function RegistrationsPage() {
 
   const myRegistrations = getRegistrationsForStudent(currentUser.id)
 
-  return (
-    <section className="shell" style={{ padding: '40px 0 64px' }}>
-      <div style={{ marginBottom: 28 }}>
-        <span className="eyebrow-tag">signed up as {currentUser.name}</span>
-        <h1 style={{ fontSize: 30, marginTop: 10 }}>My registrations</h1>
-        <p style={{ marginTop: 8 }}>
-          Everything you've registered for. This starter shows seed data —
-          {/* PARTICIPANT TASK (Task 3): split into upcoming/past sections,
-              and add a working cancel button. */}{' '}
-          separating upcoming from past, and cancelling, are Task 3.
-        </p>
-      </div>
+  const handleCancel = (regId: string, eventId: string) => {
+    if (confirm('Are you sure you want to cancel this registration?')) {
+      cancelRegistration(regId)
+      const event = getEventById(eventId)
+      if (event) {
+        event.seatsAvailable += 1
+      }
+      setRefreshTick(t => t + 1)
+    }
+  }
 
-      {myRegistrations.length === 0 ? (
-        <EmptyState
-          title="No registrations yet"
-          description="Once you register for an event, it'll show up here."
-          action={
-            <Link href="/events" className="btn btn-primary">
-              Browse events
-            </Link>
-          }
-        />
-      ) : (
+  const upcomingRegs: Registration[] = []
+  const pastRegs: Registration[] = []
+
+  myRegistrations.forEach((reg) => {
+    const event = getEventById(reg.eventId)
+    if (!event) return
+    if (isPastEvent(event)) {
+      pastRegs.push(reg)
+    } else {
+      upcomingRegs.push(reg)
+    }
+  })
+
+  const renderRegList = (regs: Registration[], title?: string) => {
+    if (regs.length === 0) return null
+    return (
+      <div style={{ marginBottom: 32 }}>
+        {title && <h2 style={{ fontSize: 20, marginBottom: 16 }}>{title}</h2>}
         <ul style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          {myRegistrations.map((reg) => {
-            const event = getEventById(reg.eventId)
-            if (!event) return null
+          {regs.map((reg) => {
+            const event = getEventById(reg.eventId)!
+            const isPast = isPastEvent(event)
+            const status = reg.status === 'cancelled' ? 'cancelled' : (isPast ? 'past' : 'open')
             return (
               <li
                 key={reg.id}
@@ -92,23 +100,49 @@ export default function RegistrationsPage() {
                   </div>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                  <StatusBadge
-                    status={reg.status === 'cancelled' ? 'cancelled' : 'open'}
-                  />
-                  {/* PARTICIPANT TASK (Task 3): wire this up to
-                      DELETE /api/registrations/[id] and update seats. */}
-                  <button
-                    className="btn btn-secondary"
-                    disabled
-                    title="Cancellation isn't wired up yet — that's Task 3"
-                  >
-                    Cancel
-                  </button>
+                  <StatusBadge status={status} />
+                  {reg.status !== 'cancelled' && !isPast && (
+                    <button
+                      className="btn btn-secondary"
+                      onClick={() => handleCancel(reg.id, event.id)}
+                    >
+                      Cancel
+                    </button>
+                  )}
                 </div>
               </li>
             )
           })}
         </ul>
+      </div>
+    )
+  }
+
+  return (
+    <section className="shell" style={{ padding: '40px 0 64px' }}>
+      <div style={{ marginBottom: 28 }}>
+        <span className="eyebrow-tag">signed up as {currentUser.name}</span>
+        <h1 style={{ fontSize: 30, marginTop: 10 }}>My registrations</h1>
+        <p style={{ marginTop: 8 }}>
+          Everything you've registered for.
+        </p>
+      </div>
+
+      {myRegistrations.length === 0 ? (
+        <EmptyState
+          title="No registrations yet"
+          description="Once you register for an event, it'll show up here."
+          action={
+            <Link href="/events" className="btn btn-primary">
+              Browse events
+            </Link>
+          }
+        />
+      ) : (
+        <>
+          {renderRegList(upcomingRegs, 'Upcoming Events')}
+          {renderRegList(pastRegs, 'Past Events')}
+        </>
       )}
     </section>
   )
