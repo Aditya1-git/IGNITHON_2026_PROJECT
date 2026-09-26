@@ -1,8 +1,9 @@
 'use client'
 
 import { useState } from 'react'
-import { events, EventCategory } from '@/data/events'
+import { events, EventCategory, searchEventsByName, filterEventsByCategory, isPastEvent } from '@/data/events'
 import EventCard from '@/components/EventCard'
+import EmptyState from '@/components/EmptyState'
 
 const CATEGORIES: (EventCategory | 'All')[] = [
   'All',
@@ -23,6 +24,11 @@ export default function EventsPage() {
   // compose together.
   const [query, setQuery] = useState('')
   const [category, setCategory] = useState<EventCategory | 'All'>('All')
+
+  // Filter out past/cancelled events, then apply search and category filter
+  const upcomingEvents = events.filter((e) => !isPastEvent(e) && !e.cancelled)
+  const categoryFiltered = filterEventsByCategory(upcomingEvents, category)
+  const displayedEvents = searchEventsByName(categoryFiltered, query)
 
   return (
     <section className="shell" style={{ padding: '40px 0 64px' }}>
@@ -70,17 +76,24 @@ export default function EventsPage() {
         </select>
       </div>
 
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
-          gap: 16,
-        }}
-      >
-        {events.filter((e) => !e.cancelled).map((event) => (
-          <EventCard key={event.id} event={event} />
-        ))}
-      </div>
+      {displayedEvents.length === 0 ? (
+        <EmptyState
+          title="No events found"
+          description="Try adjusting your search or category filter to find what you're looking for."
+        />
+      ) : (
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
+            gap: 16,
+          }}
+        >
+          {displayedEvents.map((event) => (
+            <EventCard key={event.id} event={event} />
+          ))}
+        </div>
+      )}
     </section>
   )
 }

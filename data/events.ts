@@ -235,6 +235,20 @@ export function getEventById(id: string): CampusEvent | undefined {
   return events.find((event) => event.id === id)
 }
 
+export function decrementEventSeats(id: string): void {
+  const event = getEventById(id)
+  if (event && event.seatsAvailable > 0) {
+    event.seatsAvailable -= 1
+  }
+}
+
+export function incrementEventSeats(id: string): void {
+  const event = getEventById(id)
+  if (event && event.seatsAvailable < event.capacity) {
+    event.seatsAvailable += 1
+  }
+}
+
 /**
  * PARTICIPANT TASK (Task 1 — Event Listing):
  *
@@ -248,8 +262,11 @@ export function searchEventsByName(
   eventList: CampusEvent[],
   query: string,
 ): CampusEvent[] {
-  // TODO(participant): implement case-insensitive partial name search.
-  return eventList
+  if (!query) return eventList;
+  const lowerQuery = query.toLowerCase();
+  return eventList.filter((event) =>
+    event.name.toLowerCase().includes(lowerQuery)
+  );
 }
 
 /**
@@ -263,8 +280,8 @@ export function filterEventsByCategory(
   eventList: CampusEvent[],
   category: EventCategory | 'All',
 ): CampusEvent[] {
-  // TODO(participant): implement category filtering.
-  return eventList
+  if (category === 'All') return eventList;
+  return eventList.filter((event) => event.category === category);
 }
 
 const VALID_CATEGORIES: EventCategory[] = [
